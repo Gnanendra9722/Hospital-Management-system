@@ -1,98 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Plus, Filter, Star, Mail, Phone } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
 import { Doctor } from '../types';
-
-// Mock data for doctors
-const mockDoctors: Doctor[] = [
-  {
-    id: 1,
-    name: 'Dr. John Smith',
-    specialization: 'Cardiology',
-    experience: 12,
-    phone: '(555) 123-4567',
-    email: 'john.smith@hospital.com',
-    availability: [
-      { day: 'monday', startTime: '09:00', endTime: '17:00' },
-      { day: 'wednesday', startTime: '09:00', endTime: '17:00' },
-      { day: 'friday', startTime: '09:00', endTime: '13:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-  },
-  {
-    id: 2,
-    name: 'Dr. Sarah Adams',
-    specialization: 'Neurology',
-    experience: 8,
-    phone: '(555) 234-5678',
-    email: 'sarah.adams@hospital.com',
-    availability: [
-      { day: 'tuesday', startTime: '08:00', endTime: '16:00' },
-      { day: 'thursday', startTime: '08:00', endTime: '16:00' },
-      { day: 'saturday', startTime: '10:00', endTime: '14:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-  },
-  {
-    id: 3,
-    name: 'Dr. James Wilson',
-    specialization: 'Orthopedics',
-    experience: 15,
-    phone: '(555) 345-6789',
-    email: 'james.wilson@hospital.com',
-    availability: [
-      { day: 'monday', startTime: '10:00', endTime: '18:00' },
-      { day: 'tuesday', startTime: '10:00', endTime: '18:00' },
-      { day: 'thursday', startTime: '10:00', endTime: '18:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/men/67.jpg',
-  },
-  {
-    id: 4,
-    name: 'Dr. Emily Clark',
-    specialization: 'Pediatrics',
-    experience: 10,
-    phone: '(555) 456-7890',
-    email: 'emily.clark@hospital.com',
-    availability: [
-      { day: 'wednesday', startTime: '08:00', endTime: '16:00' },
-      { day: 'friday', startTime: '08:00', endTime: '16:00' },
-      { day: 'saturday', startTime: '09:00', endTime: '13:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/women/17.jpg',
-  },
-  {
-    id: 5,
-    name: 'Dr. Michael Brown',
-    specialization: 'Dermatology',
-    experience: 7,
-    phone: '(555) 567-8901',
-    email: 'michael.brown@hospital.com',
-    availability: [
-      { day: 'monday', startTime: '09:00', endTime: '17:00' },
-      { day: 'wednesday', startTime: '09:00', endTime: '17:00' },
-      { day: 'friday', startTime: '09:00', endTime: '13:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
-  },
-  {
-    id: 6,
-    name: 'Dr. Lisa Johnson',
-    specialization: 'Ophthalmology',
-    experience: 9,
-    phone: '(555) 678-9012',
-    email: 'lisa.johnson@hospital.com',
-    availability: [
-      { day: 'tuesday', startTime: '08:30', endTime: '16:30' },
-      { day: 'thursday', startTime: '08:30', endTime: '16:30' },
-      { day: 'saturday', startTime: '10:00', endTime: '14:00' },
-    ],
-    avatar: 'https://randomuser.me/api/portraits/women/29.jpg',
-  }
-];
+import axios from 'axios';
 
 const Doctors: React.FC = () => {
-  const [doctors] = useState<Doctor[]>(mockDoctors);
+  const [doctors,setDoctors] = useState<Doctor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>('All');
 
@@ -126,6 +39,18 @@ const Doctors: React.FC = () => {
     });
     return days.join(', ');
   };
+
+  useEffect(()=>{
+    const getAllDoctors = async() =>{
+     try{
+      const data = await axios.get("/api/doctors")
+      setDoctors(data?.data)
+     }catch(err){
+      console.log(err)
+     }
+    }
+    getAllDoctors()
+  },[])
 
   return (
     <div className="animate-fade-in">
@@ -175,7 +100,7 @@ const Doctors: React.FC = () => {
       {/* Doctors grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map((doctor) => (
-          <div key={doctor.id} className="card hover:shadow-lg transition-shadow">
+          <div key={doctor?._id} className="card hover:shadow-lg transition-shadow">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <img 
                 src={doctor.avatar} 

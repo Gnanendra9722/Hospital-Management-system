@@ -1,65 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Filter, Plus, Info, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
 import { Medication, Prescription } from '../types';
+import axios from 'axios';
+import { formatTimestamp } from '../Helpers/formatTimestamp';
 
-// Mock data for medications
-const mockMedications: Medication[] = [
-  {
-    id: 1,
-    name: 'Amoxicillin',
-    category: 'Antibiotics',
-    stock: 120,
-    manufacturer: 'Pharma Inc.',
-    expiryDate: '2026-08-15',
-    unitPrice: 12.99,
-  },
-  {
-    id: 2,
-    name: 'Lisinopril',
-    category: 'Antihypertensive',
-    stock: 85,
-    manufacturer: 'MediLabs',
-    expiryDate: '2026-05-20',
-    unitPrice: 9.50,
-  },
-  {
-    id: 3,
-    name: 'Albuterol Inhaler',
-    category: 'Bronchodilator',
-    stock: 35,
-    manufacturer: 'RespiCare',
-    expiryDate: '2025-12-10',
-    unitPrice: 45.75,
-  },
-  {
-    id: 4,
-    name: 'Metformin',
-    category: 'Antidiabetic',
-    stock: 200,
-    manufacturer: 'DiabeCare',
-    expiryDate: '2026-11-05',
-    unitPrice: 8.25,
-  },
-  {
-    id: 5,
-    name: 'Paracetamol',
-    category: 'Analgesic',
-    stock: 10,
-    manufacturer: 'GeneriPharm',
-    expiryDate: '2025-10-30',
-    unitPrice: 5.99,
-  },
-  {
-    id: 6,
-    name: 'Omeprazole',
-    category: 'Proton Pump Inhibitor',
-    stock: 150,
-    manufacturer: 'GastroHealth',
-    expiryDate: '2026-02-28',
-    unitPrice: 14.50,
-  },
-];
 
 // Mock data for prescriptions
 const mockPrescriptions: Prescription[] = [
@@ -135,7 +80,7 @@ const mockPrescriptions: Prescription[] = [
 
 const Pharmacy: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'prescriptions'>('inventory');
-  const [medications] = useState<Medication[]>(mockMedications);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [prescriptions] = useState<Prescription[]>(mockPrescriptions);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
@@ -146,15 +91,15 @@ const Pharmacy: React.FC = () => {
   // Filter medications based on search term and category
   const filteredMedications = medications.filter(medication => {
     const matchesSearch = medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesCategory = categoryFilter === 'All' || medication.category === categoryFilter;
-    
+
     return matchesSearch && matchesCategory;
   });
 
   // Filter prescriptions based on search term
-  const filteredPrescriptions = prescriptions.filter(prescription => 
+  const filteredPrescriptions = prescriptions.filter(prescription =>
     prescription.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -172,7 +117,7 @@ const Pharmacy: React.FC = () => {
     const today = new Date();
     const expiry = new Date(expiryDate);
     const monthsDiff = (expiry.getFullYear() - today.getFullYear()) * 12 + (expiry.getMonth() - today.getMonth());
-    
+
     if (expiry < today) {
       return { status: 'expired', class: 'text-error-500' };
     } else if (monthsDiff <= 3) {
@@ -207,10 +152,22 @@ const Pharmacy: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const getAllMedications = async () => {
+      try {
+        const data = await axios.get("/api/medications/")
+        setMedications(data?.data)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    getAllMedications()
+  }, [])
+
   return (
     <div className="animate-fade-in">
-      <PageHeader 
-        title="Pharmacy" 
+      <PageHeader
+        title="Pharmacy"
         description="Manage medications and prescriptions"
       >
         <button className="btn btn-primary flex items-center gap-2">
@@ -223,21 +180,19 @@ const Pharmacy: React.FC = () => {
       <div className="mb-6 border-b border-neutral-200">
         <nav className="flex space-x-8">
           <button
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'inventory'
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'inventory'
                 ? 'border-primary-500 text-primary-500'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-            }`}
+              }`}
             onClick={() => setActiveTab('inventory')}
           >
             Inventory
           </button>
           <button
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'prescriptions'
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'prescriptions'
                 ? 'border-primary-500 text-primary-500'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-            }`}
+              }`}
             onClick={() => setActiveTab('prescriptions')}
           >
             Prescriptions
@@ -261,7 +216,7 @@ const Pharmacy: React.FC = () => {
           {activeTab === 'inventory' && (
             <div className="flex gap-4">
               <div className="w-64">
-                <select 
+                <select
                   className="form-input"
                   value={categoryFilter}
                   onChange={handleCategoryChange}
@@ -302,9 +257,9 @@ const Pharmacy: React.FC = () => {
                 {filteredMedications.map((medication) => {
                   const expiryStatus = getExpiryStatus(medication.expiryDate);
                   const stockStatus = getStockStatus(medication.stock);
-                
+
                   return (
-                    <tr key={medication.id} className="hover:bg-neutral-50 transition-colors">
+                    <tr key={medication?._id} className="hover:bg-neutral-50 transition-colors">
                       <td className="px-4 py-4 text-sm font-medium">{medication.name}</td>
                       <td className="px-4 py-4 text-sm">{medication.category}</td>
                       <td className="px-4 py-4 text-sm">
@@ -317,7 +272,7 @@ const Pharmacy: React.FC = () => {
                       </td>
                       <td className="px-4 py-4 text-sm">{medication.manufacturer}</td>
                       <td className="px-4 py-4 text-sm">
-                        <span className={expiryStatus.class}>{medication.expiryDate}</span>
+                        <span className={expiryStatus.class}>{formatTimestamp(medication.expiryDate,"DD/MM/YYYY")}</span>
                       </td>
                       <td className="px-4 py-4 text-sm text-right">${medication.unitPrice.toFixed(2)}</td>
                       <td className="px-4 py-4 text-sm text-center">
@@ -331,7 +286,7 @@ const Pharmacy: React.FC = () => {
               </tbody>
             </table>
           </div>
-          
+
           {filteredMedications.length === 0 && (
             <div className="text-center py-10">
               <p className="text-neutral-500">No medications found matching your search criteria.</p>
@@ -340,8 +295,8 @@ const Pharmacy: React.FC = () => {
         </div>
       ) : (
         <div>
-          {filteredPrescriptions.map((prescription) => (
-            <div key={prescription.id} className="card mb-4">
+          {filteredPrescriptions?.map((prescription) => (
+            <div key={prescription?._id} className="card mb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold">{prescription.patientName}</h3>
@@ -355,7 +310,7 @@ const Pharmacy: React.FC = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-neutral-500 mb-2">Medications</h4>
                 <ul className="divide-y divide-neutral-100 border border-neutral-200 rounded-md overflow-hidden">
@@ -376,14 +331,14 @@ const Pharmacy: React.FC = () => {
                   ))}
                 </ul>
               </div>
-              
+
               {prescription.instructions && (
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-neutral-500 mb-2">Instructions</h4>
                   <p className="text-sm p-3 bg-neutral-50 rounded-md">{prescription.instructions}</p>
                 </div>
               )}
-              
+
               <div className="border-t border-neutral-200 pt-4 flex flex-col sm:flex-row sm:justify-end sm:space-x-4">
                 {prescription.status === 'pending' && (
                   <>
@@ -397,7 +352,7 @@ const Pharmacy: React.FC = () => {
               </div>
             </div>
           ))}
-          
+
           {filteredPrescriptions.length === 0 && (
             <div className="card text-center py-10">
               <p className="text-neutral-500">No prescriptions found matching your search criteria.</p>

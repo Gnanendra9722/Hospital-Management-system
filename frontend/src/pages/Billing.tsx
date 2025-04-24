@@ -1,109 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, CreditCard, Download, Clock, Filter, Plus } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
 import { Bill } from '../types';
+import axios from 'axios';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { formatTimestamp } from '../Helpers/formatTimestamp';
 
-// Mock data for bills
-const mockBills: Bill[] = [
-  {
-    id: 1,
-    patientId: 1,
-    patientName: 'Emma Wilson',
-    date: '2025-06-10',
-    dueDate: '2025-06-25',
-    services: [
-      { id: 1, description: 'Consultation - Cardiology', quantity: 1, unitPrice: 150.00, amount: 150.00, category: 'consultation' },
-      { id: 2, description: 'ECG Test', quantity: 1, unitPrice: 85.00, amount: 85.00, category: 'lab' },
-      { id: 3, description: 'Blood Pressure Medication', quantity: 30, unitPrice: 2.50, amount: 75.00, category: 'medication' }
-    ],
-    totalAmount: 310.00,
-    paidAmount: 310.00,
-    status: 'paid'
-  },
-  {
-    id: 2,
-    patientId: 2,
-    patientName: 'Michael Johnson',
-    date: '2025-06-12',
-    dueDate: '2025-06-27',
-    services: [
-      { id: 1, description: 'Consultation - Neurology', quantity: 1, unitPrice: 180.00, amount: 180.00, category: 'consultation' },
-      { id: 2, description: 'MRI Scan', quantity: 1, unitPrice: 450.00, amount: 450.00, category: 'lab' }
-    ],
-    totalAmount: 630.00,
-    paidAmount: 300.00,
-    status: 'partial'
-  },
-  {
-    id: 3,
-    patientId: 3,
-    patientName: 'Sophia Brown',
-    date: '2025-06-14',
-    dueDate: '2025-06-29',
-    services: [
-      { id: 1, description: 'Consultation - Pediatrics', quantity: 1, unitPrice: 120.00, amount: 120.00, category: 'consultation' },
-      { id: 2, description: 'Vaccination', quantity: 2, unitPrice: 45.00, amount: 90.00, category: 'treatment' }
-    ],
-    totalAmount: 210.00,
-    paidAmount: 0,
-    status: 'pending'
-  },
-  {
-    id: 4,
-    patientId: 4,
-    patientName: 'William Davis',
-    date: '2025-05-20',
-    dueDate: '2025-06-04',
-    services: [
-      { id: 1, description: 'Consultation - Orthopedics', quantity: 1, unitPrice: 160.00, amount: 160.00, category: 'consultation' },
-      { id: 2, description: 'X-Ray', quantity: 1, unitPrice: 95.00, amount: 95.00, category: 'lab' },
-      { id: 3, description: 'Physical Therapy Session', quantity: 3, unitPrice: 75.00, amount: 225.00, category: 'treatment' }
-    ],
-    totalAmount: 480.00,
-    paidAmount: 0,
-    status: 'overdue'
-  },
-  {
-    id: 5,
-    patientId: 5,
-    patientName: 'Olivia Martinez',
-    date: '2025-06-01',
-    dueDate: '2025-06-16',
-    services: [
-      { id: 1, description: 'Consultation - Dermatology', quantity: 1, unitPrice: 140.00, amount: 140.00, category: 'consultation' },
-      { id: 2, description: 'Skin Cream Prescription', quantity: 1, unitPrice: 65.00, amount: 65.00, category: 'medication' }
-    ],
-    totalAmount: 205.00,
-    paidAmount: 0,
-    status: 'overdue'
-  },
-  {
-    id: 6,
-    patientId: 6,
-    patientName: 'James Taylor',
-    date: '2025-06-13',
-    dueDate: '2025-06-28',
-    services: [
-      { id: 1, description: 'Consultation - Ophthalmology', quantity: 1, unitPrice: 130.00, amount: 130.00, category: 'consultation' },
-      { id: 2, description: 'Eye Examination', quantity: 1, unitPrice: 75.00, amount: 75.00, category: 'lab' },
-      { id: 3, description: 'Prescription Glasses', quantity: 1, unitPrice: 250.00, amount: 250.00, category: 'other' }
-    ],
-    totalAmount: 455.00,
-    paidAmount: 0,
-    status: 'pending'
-  }
-];
 
 const Billing: React.FC = () => {
-  const [bills] = useState<Bill[]>(mockBills);
+  const [bills,setBills] = useState<Bill[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [loading,setLoading] = useState<Boolean>(false)
 
   // Filter bills based on search term and status
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        bill.id.toString().includes(searchTerm);
+                        bill._id.toString().includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || bill.status === statusFilter;
     
@@ -150,6 +64,21 @@ const Billing: React.FC = () => {
       minimumFractionDigits: 2
     }).format(amount);
   };
+
+  useEffect(()=>{
+    const getAllbills = async() =>{
+      setLoading(true)
+      try{
+        const data = await axios.get("/api/bills")
+        setBills(data?.data)
+        setLoading(false)
+      }catch(err){
+        setLoading(false)
+        console.log(err)
+      }
+    }
+    getAllbills()
+  },[])
 
   return (
     <div className="animate-fade-in">
@@ -199,7 +128,10 @@ const Billing: React.FC = () => {
       </div>
 
       {/* Bills list */}
-      <div className="card mb-6">
+      {
+        loading ?
+        <div><LoadingSpinner/></div> :
+        <div className="card mb-6">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -217,14 +149,14 @@ const Billing: React.FC = () => {
             <tbody className="divide-y divide-neutral-100">
               {filteredBills.map((bill) => (
                 <tr 
-                  key={bill.id}
+                  key={bill._id}
                   className="hover:bg-neutral-50 transition-colors cursor-pointer"
                   onClick={() => viewBillDetails(bill)}
                 >
-                  <td className="px-4 py-4 text-sm font-medium">INV-{bill.id.toString().padStart(5, '0')}</td>
+                  <td className="px-4 py-4 text-sm font-medium">INV-{bill?._id?.toString().padStart(5, '0')}</td>
                   <td className="px-4 py-4 text-sm">{bill.patientName}</td>
-                  <td className="px-4 py-4 text-sm">{bill.date}</td>
-                  <td className="px-4 py-4 text-sm">{bill.dueDate}</td>
+                  <td className="px-4 py-4 text-sm">{formatTimestamp(bill?.date,"DD/MM/YYYY")}</td>
+                  <td className="px-4 py-4 text-sm">{formatTimestamp(bill?.dueDate,"DD/MM/YYYY")}</td>
                   <td className="px-4 py-4 text-sm text-right">{formatCurrency(bill.totalAmount)}</td>
                   <td className="px-4 py-4 text-sm text-right">{formatCurrency(bill.paidAmount)}</td>
                   <td className="px-4 py-4 text-sm">
@@ -268,6 +200,8 @@ const Billing: React.FC = () => {
           </div>
         )}
       </div>
+      }
+      
 
       {/* Billing Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -337,7 +271,7 @@ const Billing: React.FC = () => {
           <div className="flex items-center justify-center min-h-screen p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-auto z-10 animate-slide-up">
               <div className="flex justify-between items-center border-b border-neutral-200 px-6 py-4">
-                <h3 className="text-lg font-semibold">Invoice #{selectedBill.id.toString().padStart(5, '0')}</h3>
+                <h3 className="text-lg font-semibold">Invoice #{selectedBill?._id.toString().padStart(5, '0')}</h3>
                 <button 
                   onClick={closeBillDetails}
                   className="text-neutral-500 hover:text-neutral-700 focus:outline-none"
@@ -384,7 +318,7 @@ const Billing: React.FC = () => {
                       </thead>
                       <tbody>
                         {selectedBill.services.map((service) => (
-                          <tr key={service.id}>
+                          <tr key={service?._id}>
                             <td className="px-4 py-3 text-sm border border-neutral-200">{service.description}</td>
                             <td className="px-4 py-3 text-sm text-center border border-neutral-200">{service.quantity}</td>
                             <td className="px-4 py-3 text-sm text-right border border-neutral-200">{formatCurrency(service.unitPrice)}</td>
